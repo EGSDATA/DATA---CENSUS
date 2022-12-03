@@ -1,0 +1,637 @@
+***Compatibilização Dados DATAZOOM
+
+foreach name in AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO {
+*As variáveis disponíveis para cada base do censo (2000 e 2010) arrumados pelo DataZoom: 
+cd "C:\Users\eduar\Downloads\TCC+ PESQUISA\Censo Demográfico\STATA\CENSOS"
+
+*Censo 2000 
+*describe using "CENSO00_both_`name'_comp.dta"
+*Censo 2010
+describe using "CENSO10_`name'_comp.dta"
+
+*Abrindo os dados de interesse de 2000:
+*use ordem	ano	UF	munic dest_lixo	id_dom ilum_eletr regiao agua_canal tipo_esc_san sit_setor_C	cond_dom sexo n_homem_dom n_mulher_dom	cond_dom_B	idade_presumida	idade	idade_meses	raca	racaB	alfabetizado	freq_escola	freq_escolaB	mun_escola	anos_estudoC	cursos_c1	cursos_c2	curso_concl	vive_conjuge	estado_conj	trab_rem_sem	afast_trab_sem	nao_remun	trab_proprio_cons	mais_de_um_trab	ocup2000	ativ2000	pos_ocup_sem	qtos_empregados	previd_B	horas_trabprin	tomou_prov	rend_ocup_prin	rend_ocup_prin_def	rend_prin_sm	rend_outras_ocup	rend_outras_ocup_def	rend_outras_sm	rend_outras_fontes	rend_outras_fontes_def	rend_total	rend_total_def	filhos_tot	filhos_nasc_vivos	f_nasc_v_hom	f_nasc_v_mul	filhos_vivos	f_vivos_hom	f_vivos_mul	filhos_nasc_mortos	f_nasc_m_hom	f_nasc_m_mul	sexo_ult_nasc_v	idade_ult_nasc_v	peso_pess	codmun	nome	merge	amc0010 newamc0010 amc9100 newamc9100 amc7000 newamc7000 n_pes_dom	renda_dom	renda_dom_def	peso_dom using "CENSO00_both_`name'_comp.dta", clear
+*Abrindo os dados de interesse de 2010:
+use ordem	ano	UF	munic dest_lixo	id_dom ilum_eletr regiao agua_canal tipo_esc_san sit_setor_C	cond_dom sexo n_homem_dom n_mulher_dom	cond_dom_B	idade_presumida	idade	idade_meses	raca	racaB	alfabetizado	freq_escola	freq_escolaB	mun_escola	anos_estudoC	cursos_c1	cursos_c2	curso_concl	vive_conjuge	estado_conj	trab_rem_sem	afast_trab_sem	nao_remun	trab_proprio_cons	mais_de_um_trab	ocup2000	ativ2000	pos_ocup_sem	qtos_empregados	previd_B	horas_trabprin	tomou_prov	rend_ocup_prin	rend_ocup_prin_def	rend_prin_sm	rend_outras_ocup	rend_outras_ocup_def	rend_outras_sm	rend_outras_fontes	rend_outras_fontes_def	rend_total	rend_total_def	filhos_tot	filhos_nasc_vivos	f_nasc_v_hom	f_nasc_v_mul	filhos_vivos	f_vivos_hom	f_vivos_mul	filhos_nasc_mortos	f_nasc_m_hom	f_nasc_m_mul	sexo_ult_nasc_v	idade_ult_nasc_v	peso_pess	codmun	nome	merge	amc0010 newamc0010 amc9100 newamc9100 amc7000 newamc7000 n_pes_dom	renda_dom	renda_dom_def	peso_dom using "CENSO10_`name'_comp.dta", clear
+*Arrumando a variável id_dom para numérico:
+destring id_dom, replace
+sort UF munic id_dom ordem
+
+*Arrumando alguns labels:
+label variable sit_setor_C "0 - rural ; 1 - urbano"
+label variable sexo "0 - feminino ; 1 - masculino"
+
+*conferindo programação numero homens e mulheres domicilio:
+by UF munic id_dom,sort: egen n_homem_domi = total(sexo==1)
+by UF munic id_dom, sort: egen n_mulher_domi = total(sexo==0)
+egen n_pes_domi = rowtotal(n_homem_domi n_mulher_domi)
+	
+lab var n_homem_domi "num de homens no domicilio"
+lab var n_mulher_domi "num de mulheres no domicilio"
+lab var n_pes_domi "num de pessoas no domicilio"
+
+
+***Educação
+gen escol_est=0
+	replace escol_est=3.5 if anos_estudoC==1
+	replace escol_est=9 if anos_estudoC==2
+	replace escol_est=13 if anos_estudoC==3
+	replace escol_est=16 if anos_estudoC==4
+
+*****Idade
+gen i0a14anos_=0
+replace i0a14anos_=1 if idade<=14
+by UF munic id_dom,sort: egen  Qnt_Inft= total(i0a14anos_)
+
+gen i15a64anos_=0
+replace i15a64anos_=1 if idade>=15 & idade<=64 
+by UF munic id_dom,sort: egen  Qnt_Idade_Ativa= total(i15a64anos_)
+
+gen i65anos_=0
+replace i65anos_=1 if idade>=65
+by UF munic id_dom,sort: egen  Qnt_de_Idosos= total(i65anos_)
+
+gen Adultos=1 if idade > 14
+by UF munic id_dom,sort: egen  Adlt= total(Adultos)
+ 
+replace horas_trabprin=0 if horas_trabprin==.
+gen PopEcAti =1 if horas_trabprin >0 
+by UF munic id_dom,sort: egen  Qnt_de_Economicamente_Ativos= total(PopEcAti)
+
+
+
+***Rural ou Urbano
+gen cont_RuralUrbana=0
+replace cont_RuralUrbana=1 if sit_setor_C==0 |sit_setor_C==1 
+gen urbano_=0
+replace urbano_=1 if sit_setor_C==1
+gen rural_=0
+replace rural_=1 if sit_setor_C==0
+
+*Gerar Sexo
+gen cont_sexo=0
+replace cont_sexo=1 if sexo==0 | sexo ==1 
+gen homem_=0
+replace homem_=1 if sexo==0
+gen mulher_=0
+replace mulher_=1 if sexo==1
+
+
+*******Razões de Dependencia Domiciliar
+*** Para entendimento posterior
+* mdinf= (Qnt_Inft/Qnt_Economicamente_Ativa)*100 /*razão de dependencia das crianças*/
+* mdid=(Qnt_de_Idosos/Qnt_Economicamente_Ativa)*100 /*razão de dependencia de idosos*/
+* pia =Qnt_Idade_Ativa/n_pes_dom
+* pea = Qnt_Economicamente_Ativa/n_pes_dom
+* participação= pea/pia
+
+*******Renda
+gen rend_pcpt = renda_dom_def/n_pes_dom
+gen rendDom_por_L_efetivo = renda_dom_def/Qnt_de_Economicamente_Ativos
+
+
+****Infraestrutura
+*percentual de pessoas que residem em domicílios com água canalizada
+gen cont_agua=0
+replace cont_agua=1 if agua_canal==1 | agua_canal==2 | agua_canal==3 | agua_canal==.
+gen agua_=0
+replace agua_ =1 if agua_canal==1 
+
+*Gerar percentual de pessoas que residem em domicílios ligados à rede geral de esgoto
+gen cont_esgoto=0
+replace cont_esgoto=1 if tipo_esc_san==1 | tipo_esc_san==2 | tipo_esc_san==3 | tipo_esc_san==4 | tipo_esc_san==5 | tipo_esc_san==6 | tipo_esc_san==7 | tipo_esc_san==.
+gen esgoto_ =0
+replace esgoto_ =1 if tipo_esc_san==1
+
+*Gerar percentual de pessoas que residem em domicílios com coleta de lixo
+gen cont_lixo=0
+replace cont_lixo=1 if dest_lixo==1 | dest_lixo==2 | dest_lixo==3 | dest_lixo==4 | dest_lixo==5 | dest_lixo==6 | dest_lixo==7  | dest_lixo==. 
+gen lixo_ =0
+replace lixo_=1 if dest_lixo==1 | dest_lixo==2
+
+*Gerar percentual de pessoas que residem em domicílios com iluminação elétrica
+gen cont_luz=0
+replace cont_luz=1 if ilum_eletr==1 | ilum_eletr==0 | ilum_eletr==.
+gen luz_ =0
+replace luz_ =1 if ilum_eletr==1 
+
+
+*************************************************************
+******************AGREGANDO OS MUNICIPIOS********************
+by UF munic ,sort: egen  peso_municipio= total(peso_pess)
+by UF munic id_dom,sort: egen pesoDom= total(peso_pess)
+
+
+****Educação
+
+by UF munic id_dom,sort: egen Esc_Média_Dom= total(escol_est/Adlt)
+by UF munic ,sort:egen EsclMed =total(Esc_Média_Dom*peso_pess/peso_municipio)
+
+***População
+by UF munic ,sort: egen PIA= total(i15a64anos_*peso_pess/peso_municipio)
+by UF munic ,sort: egen Pop_infa= total(i0a14anos_*peso_pess/peso_municipio)
+by UF munic ,sort: egen Pop_Idos= total(i65anos_*peso_pess/peso_municipio)
+by UF munic ,sort: egen PEA = total(PopEcAti*peso_pess/peso_municipio)
+gen Dpif= Pop_infa/PIA
+gen Dpid= Pop_Idos/PIA
+gen Participação =PEA/PIA
+
+by UF munic ,sort: egen Rural = total(rural_*peso_pess/peso_municipio)
+by UF munic ,sort: egen Urbana= total(urbano_*peso_pess/peso_municipio)
+
+by UF munic ,sort: egen Homens= total(homem_*peso_pess/peso_municipio)
+by UF munic ,sort: egen Mulheres= total(mulher_*peso_pess/peso_municipio)
+
+by UF munic id_dom,sort: egen Idade_Média_Dom = mean(idade)
+by UF munic ,sort:egen IdMéd =total(Idade_Média_Dom*peso_pess/peso_municipio)
+
+***Agregamento Renda
+by UF munic id_dom, sort :egen renda_pct=mean(renda_dom_def/n_pes_dom) 
+by UF munic ,sort:egen Rndpct_def=total(renda_pct*peso_pess/peso_municipio)
+
+by UF munic id_dom, sort :egen rend_p_L=mean(renda_dom_def/Qnt_de_Economicamente_Ativos) 
+by UF munic ,sort:egen RendaPorL=total(rend_p_L*peso_pess/peso_municipio)
+
+****AgregamentoInfraestrutura
+by UF munic ,sort: egen Soma_Pop_ComLuz= total(luz_*pesoDom/peso_municipio)
+by UF munic, sort: egen Soma_Dom_Luz = total(cont_luz*pesoDom/peso_municipio)
+gen LuzEletr =Soma_Pop_ComLuz/Soma_Dom_Luz 
+
+by UF munic ,sort: egen Soma_Pop_Comesg= total(esgoto_*pesoDom/peso_municipio)
+by UF munic, sort: egen Soma_Dom_esg = total(cont_esgoto*pesoDom/peso_municipio)
+gen Esgoto =Soma_Pop_Comesg/Soma_Dom_esg
+
+by UF munic ,sort: egen Soma_Pop_ComLixo= total(lixo_*pesoDom/peso_municipio)
+by UF munic, sort: egen Soma_Dom_Lixo = total(cont_lixo*pesoDom/peso_municipio)
+gen ColetaDeLixo=Soma_Pop_ComLix/Soma_Dom_Lixo
+
+by UF munic ,sort: egen Soma_Pop_ComAgua= total(agua_*pesoDom/peso_municipio)
+by UF munic, sort: egen Soma_Dom_Agua = total(cont_agua*pesoDom/peso_municipio)
+gen Agua=Soma_Pop_ComAgua/Soma_Dom_Agua
+
+keep ano UF regiao munic codmun nome amc0010 newamc0010 peso_municipio amc9100 newamc9100 amc7000 newamc7000 RendaPorL Rndpct_def EsclMed PIA PEA Dpif Dpid Participação Pop_Idos LuzEletr Esgoto ColetaDeLixo Agua  Rural Urbana Homens Mulheres Rndpct_def IdMéd Pop_infa 
+duplicates drop munic, force
+
+
+*save "CENSO00_both_`name'_comp_.dta",replace
+save "CENSO10_`name'_comp_.dta",replace
+	}
+clear
+
+*As variáveis disponíveis para cada base do censo (2000 e 2010) arrumados pelo DataZoom: 
+cd "C:\Users\eduar\Downloads\TCC+ PESQUISA\Censo Demográfico\STATA\CENSOS\2000 Mod"
+
+
+foreach name in AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO {
+ append using "CENSO00_both_`name'_comp_.dta" 
+ 
+ duplicates drop munic, force
+
+save "CENSO00_BR", replace
+}
+clear
+
+cd "C:\Users\eduar\Downloads\TCC+ PESQUISA\Censo Demográfico\STATA\CENSOS\2010 Mod"
+
+foreach name in AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO {
+ append using "CENSO10_`name'_comp_.dta" 
+
+ duplicates drop munic, force
+save "CENSO10_BR", replace
+}
+
+append using "C:\Users\eduar\Downloads\TCC+ PESQUISA\Censo Demográfico\STATA\CENSOS\2000 Mod\CENSO00_BR.dta"
+
+
+
+*****************************
+*********DADOS ATLAS*********
+
+merge m:m codmun ano using "C:\Users\eduar\Downloads\TCC+ PESQUISA\Censo Demográfico\STATA\CENSOS\ATLAS.dta"
+
+ drop _merge
+ merge m:m codmun using "C:\Users\eduar\Downloads\_Crosswalk_final_2000_2010.dta"
+ save "C:\Users\eduar\Downloads\TCC+ PESQUISA\Censo Demográfico\Pré_Censo_2000_2010.dta"
+ clear
+**************************************************************************************************************************
+*************************************************************************************************************************
+***********************************************************************************************************************
+*Poupança
+
+******2000
+import delimited "C:\Users\eduar\Downloads\TCC+ PESQUISA\Censo Demográfico\EstBan\200001_ESTBAN.CSV", delimiter(";") 
+drop codmun
+rename codmun_ibge codmun
+merge m:m codmun using "C:\Users\eduar\Downloads\_Crosswalk_final_2000_2010.dta"
+keep data_base uf municipio verbete_160_operacoes_de_credito verbete_162_financiamentos verbete_399_total_do_ativo verbete_420_depositos_de_poupanc amc codmun
+destring verbete_399_total_do_ativo, replace force
+by amc, sort: egen Dep_Poupança_Mun=total(verbete_420_depositos_de_poupanc)
+by amc, sort: egen Financiamentos_mun=total(verbete_162_financiamentos )
+by amc, sort: egen TotalAtivos_mun=total(verbete_399_total_do_ativo )
+by amc, sort: egen OP_Cred_Mun=total(verbete_160_operacoes_de_credito )
+by amc, sort: egen Med_Dep_Poupança_Mun=mean(verbete_420_depositos_de_poupanc)
+by amc, sort: egen Med_Financiamentos_mun=mean(verbete_162_financiamentos )
+by amc, sort: egen Med_TotalAtivos_mun=mean(verbete_399_total_do_ativo )
+by amc, sort: egen Med_OP_Cred_Mun=mean(verbete_160_operacoes_de_credito )
+
+gen ano=2000
+duplicates drop amc, force
+
+drop verbete_160_operacoes_de_credito verbete_162_financiamentos verbete_399_total_do_ativo verbete_420_depositos_de_poupanc
+save "C:\Users\eduar\Downloads\TCC+ PESQUISA\Censo Demográfico\EstBan\Poup2000_2", replace
+clear
+
+*********2010
+import delimited "C:\Users\eduar\Downloads\TCC+ PESQUISA\Censo Demográfico\EstBan\201001_ESTBAN.CSV", delimiter(";") 
+drop codmun
+rename codmun_ibge codmun
+merge m:m codmun using "C:\Users\eduar\Downloads\_Crosswalk_final_2000_2010.dta"
+keep data_base uf municipio verbete_160_operacoes_de_credito verbete_162_financiamentos verbete_399_total_do_ativo verbete_420_depositos_de_poupanc amc codmun
+destring verbete_160_operacoes_de_credito, replace force
+by amc, sort: egen Dep_Poupança_Mun=total(verbete_420_depositos_de_poupanc)
+by amc, sort: egen Financiamentos_mun=total(verbete_162_financiamentos )
+by amc, sort: egen TotalAtivos_mun=total(verbete_399_total_do_ativo )
+by amc, sort: egen OP_Cred_Mun=total(verbete_160_operacoes_de_credito )
+by amc, sort: egen Med_Dep_Poupança_Mun=mean(verbete_420_depositos_de_poupanc)
+by amc, sort: egen Med_Financiamentos_mun=mean(verbete_162_financiamentos )
+by amc, sort: egen Med_TotalAtivos_mun=mean(verbete_399_total_do_ativo )
+by amc, sort: egen Med_OP_Cred_Mun=mean(verbete_160_operacoes_de_credito )
+
+gen ano=2010
+duplicates drop amc, force
+drop verbete_160_operacoes_de_credito verbete_162_financiamentos verbete_399_total_do_ativo verbete_420_depositos_de_poupanc
+save "C:\Users\eduar\Downloads\TCC+ PESQUISA\Censo Demográfico\EstBan\Poup2010", replace
+
+
+append using "C:\Users\eduar\Downloads\TCC+ PESQUISA\Censo Demográfico\EstBan\Poup2000"
+save "C:\Users\eduar\Downloads\TCC+ PESQUISA\Censo Demográfico\Poup_Mun_2000_2010_F.dta"
+
+
+***************
+************Dados População 
+
+import excel "C:\Users\eduar\Downloads\TCC+ PESQUISA\Censo Demográfico\Pop_Mun_2000_2010.xls", sheet("Séries") firstrow
+rename Codigo codmun
+merge m:m codmun using "C:\Users\eduar\Downloads\_Crosswalk_final_2000_2010.dta"
+
+by amc: egen tot_1991= total(cond(ano == 1991, PopulaçãoResidente,.)) 
+by amc: egen tot_2000 = total(cond(ano == 2000,PopulaçãoResidente,.)) 
+by amc: egen tot_2010= total(cond(ano == 2010, PopulaçãoResidente,.))
+gen Crescimento_Populacional = tot_2000/ tot_1991 -1 if ano==2000
+ replace Crescimento_Populacional = tot_2010/ tot_2000 -1 if ano==2010
+drop if ano==1991 
+drop tot_1991 tot_2000 tot_2010
+
+
+save "C:\Users\eduar\Downloads\TCC+ PESQUISA\Censo Demográfico\Pop_Mun_2000_2010.dta"
+drop _merge
+clear
+
+
+***********Agregamento AMC
+************
+**********
+**************
+use "C:\Users\eduar\Downloads\TCC+ PESQUISA\Censo Demográfico\Pré_Censo_2000_2010.dta"
+merge m:m amc ano "C:\Users\eduar\Downloads\TCC+ PESQUISA\Censo Demográfico\Poup_Mun_2000_2010_F.dta"
+drop _merge
+merge m:m amc ano "C:\Users\eduar\Downloads\TCC+ PESQUISA\Censo Demográfico\Pop_Mun_2000_2010.dta"
+drop _merge
+by UF ano amc ,sort: egen  peso_amc= total(peso_municipio)
+
+
+****Educação
+
+by UF ano amc ,sort:egen EscolaridadeMed =total(EsclMed*peso_municipio/peso_amc)
+by UF ano amc ,sort:egen pea =total(PEA*peso_municipio/peso_amc)
+by UF ano amc ,sort:egen pia =total(PIA*peso_municipio/peso_amc)
+by UF ano amc ,sort:egen Ppl_Inf =total(Pop_infa*peso_municipio/peso_amc)
+by UF ano amc ,sort:egen Ppl_Idos =total(Pop_Idos*peso_municipio/peso_amc)
+by UF ano amc ,sort:egen Depend_Inf =total(Dpif*peso_municipio/peso_amc)
+by UF ano amc ,sort:egen Depend_Ido =total(Dpid*peso_municipio/peso_amc)
+by UF ano amc ,sort:egen rural =total(Rural*peso_municipio/peso_amc)
+by UF ano amc ,sort:egen urbana=total(Urbana*peso_municipio/peso_amc)
+
+
+
+by UF ano amc ,sort:egen mulheres =total(Mulheres*peso_municipio/peso_amc)
+by UF ano amc ,sort:egen homens=total(Homens*peso_municipio/peso_amc)
+
+by UF ano amc ,sort:egen Idade_M =total(IdMéd*peso_municipio/peso_amc)
+by UF ano amc ,sort:egen Renda_Pct=total(Rndpct_def*peso_municipio/peso_amc)
+by UF ano amc ,sort:egen Renda_Por_L=total(RendaPorL*peso_municipio/peso_amc)
+by UF ano amc ,sort:egen Participação_L=total(Participação*peso_municipio/peso_amc)
+
+
+by UF ano amc ,sort:egen Luz =total(LuzEletr*peso_municipio/peso_amc)
+by UF ano amc ,sort:egen esgoto=total(Esgoto*peso_municipio/peso_amc)
+
+by UF ano amc ,sort:egen Lixo=total(ColetaDeLixo*peso_municipio/peso_amc)
+by UF ano amc ,sort:egen agua=total(Agua*peso_municipio/peso_amc)
+
+by UF ano amc ,sort:egen EspcVidaaoNascer=mean(Esperançadevidaaonascer)
+by UF ano amc ,sort:egen MortInf=mean(Mortalidadeinfantil)
+by UF ano amc ,sort:egen idhm=mean(IDHM)
+by UF ano amc ,sort:egen idhmrend=mean(IDHMRenda)
+by UF ano amc ,sort:egen idhm_long=mean(IDHMLongevidade)
+by UF ano amc ,sort:egen idhmeduc=mean(IDHMEducação)
+by UF ano amc ,sort:egen txfecund=mean(Taxadefecundidadetotal)
+by UF ano amc ,sort:egen txenvlhc=mean(Taxadeenvelhecimento)
+
+drop EsclMed-Agua
+drop Esperançadevidaaonascer-Taxadeenvelhecimento
+
+save "C:\Users\eduar\Downloads\TCC+ PESQUISA\Censo Demográfico\Censo_2000_LpAMC.dta"
+use "C:\Users\eduar\Downloads\TCC+ PESQUISA\Censo Demográfico\Censo_2000_LpAMC.dta"
+**Para remover duplicatas de amc 
+keep if ano==2000
+duplicates drop amc, force
+save "C:\Users\eduar\Downloads\TCC+ PESQUISA\Censo Demográfico\Censo_2000_LpAMC1.dta"
+clear
+**OU
+keep if ano==2010
+duplicates drop amc, force
+save "C:\Users\eduar\Downloads\TCC+ PESQUISA\Censo Demográfico\Censo_2000_LpAMC2.dta",replace
+****append
+append using "C:\Users\eduar\Downloads\TCC+ PESQUISA\Censo Demográfico\Censo_2000_LpAMC1.dta"
+
+ merge 1:1 ano amc using "C:\Users\eduar\Downloads\TCC+ PESQUISA\Censo Demográfico\EstBan\Poup2000_2010_F.dta"
+ 
+ *************Gerando Variações e Logs
+ ***********
+ *******
+ **********
+ replace pea=pea*100
+replace pia=pia*100
+replace Ppl_Inf=Ppl_Inf*100
+replace Ppl_Idos=Ppl_Idos*100
+replace Depend_Inf=Depend_Inf*100
+replace Depend_Ido=Depend_Ido*100
+replace rural=rural*100
+replace urbana=urbana*100
+replace Luz=Luz*100
+replace Lixo=Lixo*100
+replace agua=agua*100
+replace esgoto=esgoto*100
+replace Luz=0 if Luz==.
+replace Lixo=0 if Lixo==.
+replace agua=0 if agua==.
+replace esgoto=0 if esgoto==.
+
+
+
+ gen LnEscol=ln(EscolaridadeMed )
+ gen LnPIA = ln(pia)
+ gen LnPEA= ln(pea)
+ gen LnRural = ln(rural)
+ gen LnUrbana = ln(urbana)
+ gen LnRenda_Pct= ln(Renda_Pct)
+ gen LnPoup_pct =ln(Dep_Poupança_Mun/PopulaçãoResidente)
+ gen LnPoup_Total =ln(Dep_Poupança_Mun)
+ gen LnPoup_Med =ln(Med_Dep_Poupança_Mun)
+ gen LnDpif =ln(Depend_Inf)
+ gen LnDpid=ln(Depend_Ido)
+ gen LnLixo = ln(Lixo)
+ gen LnAgua = ln(agua)
+ gen LnLuz =ln(Luz)
+ replace esgoto=esgoto*100
+replace LnLuz=0 if LnLuz==.
+replace LnLixo=0 if LnLixo==.
+replace LnAgua=0 if Lnagua==.
+replace esgoto=0 if esgoto==.
+ 
+ gen Infra= (Luz+agua+esgoto+Lixo)/4
+ gen LnInfra =ln(Infra)
+ gen Poup_pct=Dep_Poupança_Mun/PopulaçãoResidente
+ 
+ replace LnPoup_pct =0 if LnPoup_pct==.
+ replace LnPoup_Total=0 LnPoup_Total==.
+ replace LnPoup_Med =0 if LnPoup_Med==.
+ replace Med_Dep_Poupança_Mun =0 if Med_Dep_Poupança_Mun==.
+ replace Dep_Poupança_Mun =0 if Dep_Poupança_Mun==.
+ 
+ 
+ *Variações para o cross section, ou não
+ by amc: egen tot_2000 = total(cond(ano == 2000,Renda_Pct,.)) 
+ by amc: egen tot_2010= total(cond(ano == 2010, Renda_Pct,.)) 
+ gen Var_Renda =(tot_2010/tot_2000-1) if ano ==2010
+ replace Var_Renda =0 if Var_Renda==.
+ 
+ by amc: egen tot_2000_edc = total(cond(ano == 2000,EscolaridadeMed,.)) 
+ by amc: egen tot_2010_edc= total(cond(ano == 2010,EscolaridadeMed ,.)) 
+ gen Var_Edc =(tot_2010_edc/tot_2000_edc-1) if ano==2010
+ 
+ by amc: egen tot_2000_poup_pct = total(cond(ano == 2000,Poup_pct,.)) 
+ by amc: egen tot_2010_poup_pct= total(cond(ano == 2010,Poup_pct ,.)) 
+ gen Var_poup_pct =(tot_2010_poup_pct/tot_2000_poup_pct-1) if ano==2010
+ 
+ by amc: egen tot_2000_infra = total(cond(ano == 2000,Infra,.)) 
+ by amc: egen tot_2010_infra= total(cond(ano == 2010,Infra ,.)) 
+ gen Var_infra =(tot_2010_infra/tot_2000_infra-1) if ano==2010
+ 
+ by amc: egen tot_2000_dpid = total(cond(ano == 2000,Depend_Ido,.)) 
+ by amc: egen tot_2010_dpid= total(cond(ano == 2010,Depend_Ido ,.)) 
+ gen Var_dpid =(tot_2010_dpid/tot_2000_dpid-1) if ano==2010
+ 
+ by amc: egen tot_2000_dpif = total(cond(ano == 2000,Depend_Inf,.)) 
+ by amc: egen tot_2010_dpif= total(cond(ano == 2010,Depend_Inf,.)) 
+ gen Var_dpif =(tot_2010_dpif/tot_2000_dpif-1) if ano==2010
+ 
+ by amc: egen tot_2000_pia = total(cond(ano == 2000,pia,.)) 
+ by amc: egen tot_2010_pia= total(cond(ano == 2010,pia,.)) 
+ gen Var_pia =(tot_2010_pia/tot_2000_pia-1) if ano==2010
+ 
+ by amc: egen tot_2000_pea = total(cond(ano == 2000,pea,.)) 
+ by amc: egen tot_2010_pea= total(cond(ano == 2010,pea,.)) 
+ gen Var_pea =(tot_2010_pea/tot_2000_pea-1) if ano==2010
+ 
+ drop tot_2010_pea tot_2000_pea tot_2010_pia tot_2000_pia tot_2010_dpif tot_2000_dpif tot_2010_dpid tot_2000_dpid tot_2010_infra tot_2000_infra tot_2010_poup_pct tot_2000_poup_pct tot_2010_edc tot_2000_edc
+ drop tot_2010 tot_2000
+ 
+ replace Var_Renda =0 if Var_Renda==.
+ replace Var_poup_Pct =0 if Var_poup_Pct==.
+ replace Var_Edc =0 if Var_Edc==.
+ replace Var_infra =0 if Var_infra==.
+ replace Var_dpid=0 if Var_dpid==.
+ replace Var_dpif =0 if Var_dpif==.
+ replace Var_pia=0 if Var_pia==.
+ replace Var_pea =0 if Var_pea==.
+ replace Var_poup_pct =0 if Var_poup_pct==.
+ 
+///////Ln 
+ by amc: egen Lntot_2000 = total(cond(ano == 2000,LnRenda_Pct,.)) 
+ by amc: egen Lntot_2010= total(cond(ano == 2010, LnRenda_Pct,.)) 
+ gen Var_LnRenda =(Lntot_2010/Lntot_2000-1) if ano ==2010
+ replace Var_LnRenda_pct =0 if Var_Renda_pct==.
+ 
+ by amc: egen tot_2000_edc = total(cond(ano == 2000,LnEscol,.)) 
+ by amc: egen tot_2010_edc= total(cond(ano == 2010,LnEscol ,.)) 
+ gen Var_LnEdc =(tot_2010_edc/tot_2000_edc-1) if ano==2010
+ 
+ by amc: egen tot_2000_poup_pct = total(cond(ano == 2000,LnPoup_pct,.)) 
+ by amc: egen tot_2010_poup_pct= total(cond(ano == 2010,LnPoup_pct ,.)) 
+ gen Var_Lnpoup_pct =(tot_2010_poup_pct/tot_2000_poup_pct-1) if ano==2010
+ 
+ by amc: egen tot_2000_infra = total(cond(ano == 2000,LnInfra,.)) 
+ by amc: egen tot_2010_infra= total(cond(ano == 2010,LnInfra ,.)) 
+ gen Var_Lninfra =(tot_2010_infra/tot_2000_infra-1) if ano==2010
+ 
+ by amc: egen tot_2000_dpid = total(cond(ano == 2000,LnDpid,.)) 
+ by amc: egen tot_2010_dpid= total(cond(ano == 2010,LnDpid ,.)) 
+ gen Var_Lndpid =(tot_2010_dpid/tot_2000_dpid-1) if ano==2010
+ 
+ by amc: egen tot_2000_dpif = total(cond(ano == 2000,LnDpif,.)) 
+ by amc: egen tot_2010_dpif= total(cond(ano == 2010,LnDpif,.)) 
+ gen Var_Lndpif =(tot_2010_dpif/tot_2000_dpif-1) if ano==2010
+ 
+ by amc: egen tot_2000_pia = total(cond(ano == 2000,LnPIA,.)) 
+ by amc: egen tot_2010_pia= total(cond(ano == 2010,LnPIA,.)) 
+ gen Var_Lnpia =(tot_2010_pia/tot_2000_pia-1) if ano==2010
+ 
+ by amc: egen tot_2000_pea = total(cond(ano == 2000,LnPEA,.)) 
+ by amc: egen tot_2010_pea= total(cond(ano == 2010,LnPEA,.)) 
+ gen Var_Lnpea =(tot_2010_pea/tot_2000_pea-1) if ano==2010
+ 
+ replace Var_LnRenda =0 if Var_LnRenda==.
+ replace Var_LnPoup_Pct =0 if Var_LnPoup_Pct==.
+ replace Var_LnEdc =0 if Var_LnEdc==.
+ replace Var_Lninfra =0 if Var_Lninfra==.
+ replace Var_Lndpid=0 if Var_Lndpid==.
+ replace Var_Lndpif =0 if Var_Lndpif==.
+	 
+	   
+drop tot_2010_pea tot_2000_pea tot_2010_pia tot_2000_pia tot_2010_dpif tot_2000_dpif tot_2010_dpid tot_2000_dpid tot_2010_infra tot_2000_infra tot_2010_poup_pct tot_2000_poup_pct tot_2010_edc tot_2000_edc
+drop lntot_2010 lntot_2000
+
+
+save "C:\Users\eduar\Downloads\TCC+ PESQUISA\Censo Demográfico\Censo_2000_2010_Completo_VF.dta"
+
+
+-------- Essa é a base para agregação da base original do censo. Dessa forma, os comandos abaixo só funcionam com o tratamento já realizado.
+-------- Naturalmente, a base é mantida privada por motivo de pesquisa científica.
+--------------------------------
+
+***Partindo do Censo_2000_2010_Completo_VF criamos o modelo Cross Section
+
+ by amc: egen tot_2000 = total(cond(ano == 2000,Renda_Pct,.)) 
+ by amc: egen tot_2010= total(cond(ano == 2010, Renda_Pct,.)) 
+ replace Var_Renda =(tot_2010/tot_2000-1) 
+ replace Var_Renda =0 if Var_Renda==.
+ 
+  by amc: egen lntot_2000 = total(cond(ano == 2000,LnRenda_Pct,.)) 
+ by amc: egen lntot_2010= total(cond(ano == 2010, LnRenda_Pct,.))
+ replace Var_LnRenda =(lntot_2010/lntot_2000-1) 
+ replace Var_LnRenda =0 if Var_LnRenda==.
+ 
+ by amc: egen tot_2000_L = total(cond(ano == 2000,Renda_Por_L,.)) 
+ by amc: egen tot_2010_L= total(cond(ano == 2010, Renda_Por_L,.)) 
+  gen Var_RendaL =(tot_2010_L/tot_2000_L-1) 
+ replace Var_RendaL =0 if Var_RendaL==.
+ 
+  by amc: egen tot_2000_edc = total(cond(ano == 2000,EscolaridadeMed,.)) 
+ by amc: egen tot_2010_edc= total(cond(ano == 2010,EscolaridadeMed ,.)) 
+ gen Var_Educ =(tot_2010_edc/tot_2000_edc-1) 
+ 
+  
+  by amc: egen tot_2000_pea = total(cond(ano == 2000,pea,.)) 
+ by amc: egen tot_2010_pea= total(cond(ano == 2010,pea,.)) 
+ gen Var_Pea =(tot_2010_pea/tot_2000_pea-1) 
+ 
+  by amc: egen tot_2000_pia = total(cond(ano == 2000,pia,.)) 
+ by amc: egen tot_2010_pia= total(cond(ano == 2010,pia,.)) 
+ gen Var_Pia =(tot_2010_pia/tot_2000_pia-1) 
+ 
+   by amc: egen tot_2000_Dpif = total(cond(ano == 2000,Depend_Inf,.)) 
+ by amc: egen tot_2010_Dpif= total(cond(ano == 2010,Depend_Inf,.)) 
+ gen Var_Dpif =(tot_2010_Dpif/tot_2000_Dpif-1) 
+ 
+    by amc: egen tot_2000_Dpid = total(cond(ano == 2000,Depend_Ido,.)) 
+ by amc: egen tot_2010_Dpid= total(cond(ano == 2010,Depend_Ido,.)) 
+ gen Var_Dpid =(tot_2010_Dpid/tot_2000_Dpid-1) 
+ 
+ 
+   by amc: egen tot_2000_part = total(cond(ano == 2000,Participação_L,.)) 
+ by amc: egen tot_2010_part= total(cond(ano == 2010,Participação_L,.)) 
+ gen Var_Part =(tot_2010_part/tot_2000_part-1) 
+ 
+ 
+   by amc: egen tot_2000_pop = total(cond(ano == 2000,PopulaçãoResidente,.)) 
+ by amc: egen tot_2010_pop= total(cond(ano == 2010,PopulaçãoResidente,.)) 
+ gen CrescimentoPop =(tot_2010_pop/tot_2000_pop-1) 
+ 
+ ****Para usar a renda ao invés da variação no período
+ gen renda2010 = Renda_Pct 
+ replace renda2010 = 0 if ano==2000
+  by amc: egen Renda_pct_2010= total(Renda_Pct) 
+  
+  gen renda2010_L = Renda_Por_L
+ replace renda2010_L = 0 if ano==2000
+  by amc: egen Renda_pct_2010_L= total(Renda_Por_L) 
+ 
+ *** Opcional
+ replace Participação_L= Participação_L*100
+ replace Depend_Idos= Depend_Idos*100
+ replace Depend_Inf= Depend_Inf*100
+
+ *** Agora temos a variação entre 2000 e 2010 para os dois períodos, então eliminamos o período de 2010 e as variáveis desnecessárias
+drop if ano==2010
+drop Var_Edc-Var_pea
+drop Var_LnEdc-tot_2010_L
+drop tot_2000_edc tot_2010_edc
+drop Varrend
+drop ano
+drop tot_2000_pea tot_2010_pea
+drop tot_2000_pia tot_2010_pia
+drop tot_2000_Dpif tot_2010_Dpif
+drop tot_2000_Dpid tot_2010_Dpid
+drop tot_2000_part tot_2010_part
+drop tot_2000_pop tot_2010_pop
+drop renda2010
+drop renda2010_L
+
+*** Temos agora a Variação entre 2000 e 2010 e as variáveis dependentes no ano inicial (2000)
+*****Juntando com o Shape
+merge m:1 clu_final using Shape_AMC_2000_2010
+drop _merge
+xtset,clear
+spset, modify shpfile(Shape_AMC_2000_2010_shp)
+spmatrix create contiguity W
+spmatrix create contiguity W_row
+
+**I de Moran****
+********Modelo 1
+*spivregress Renda_pct_2010 Renda_Pct pia  Depend_Inf Depend_Ido Dep_Poup (EscolaridadeMed= idhm_long)  ,noconst dvarlag(W) errorlag(W) ivarlag( W: Depend_Inf Depend_Ido )
+
+regress Var_Renda Renda_Pct pia Depend_Inf Depend_Ido Dep_Poup EscolaridadeMed, noconst  
+estat moran, errorlag(W)
+
+******Modelo 2
+*spivregress Var_Renda Renda_Pct pia  Var_Dpid Var_Dpif Dep_Poup (EscolaridadeMed= idhm_long) ,noconst  dvarlag(W) errorlag(W) ivarlag( W: Depend_Inf Depend_Ido )
+
+regress Var_Renda Renda_Pct pia Var_Dpid Var_Dpif Dep_Poup EscolaridadeMed, noconst  
+estat moran, errorlag(W)
+
+*Teste endogeinedade da var educ
+
+ regress EscolaridadeMed Renda_Pct pia Depend_Inf Depend_Ido Dep_Poup ,noconst
+ predict educ_e, res
+ regress Var_Renda Renda_Pct pia  Depend_Inf Depend_Ido Dep_Poup EscolaridadeMed educ_e ,noconst
+ 
+ ***** Resíduos significativos, há endogeneidade
+ *Ou
+ ****** Teste de Instrumentos/ Usei Idhm Longevidade baseado em alguns artigos que encontram relações entre Longevidade e Educação.
+ ivregress 2sls Var_Renda Renda_Pct pia  Depend_Inf Depend_Ido Dep_Poup (EscolaridadeMed= idhm_long)  ,noconst
+ estat endog
+ estat firststage
+ 
+ ****Estimações
+ 
+ ****Modelo 1
+spivregress Var_Renda  Renda_Pct Participação_L Depend_Inf Depend_Ido Dep_Poup (EscolaridadeMed= idhm_long)  ,noconst heteroskedastic dvarlag(W) errorlag(W) ivarlag( W: Depend_Inf Depend_Ido )
+estat impact
+******Modelo 2
+spivregress Var_Renda  Renda_Pct Participação_L Var_Dpid Var_Dpif Dep_Poup (EscolaridadeMed= idhm_long)  ,noconst heteroskedastic dvarlag(W) errorlag(W) ivarlag( W: Depend_Inf Depend_Ido )
+estat impact
+
+ 
+ 
