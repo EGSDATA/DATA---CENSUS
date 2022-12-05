@@ -1,3 +1,52 @@
 ----------------Partindo do Projeto original (Localizado na pasta de código Stata), a idéia é realizar a análise de dados atráves de SQL.
 ---------------- A base de dados continua sendo privada.
 ---------------- Após o código SQL, o objetivo é importar a base de dados para o PowerBi onde será feita a apresentação final dos dados.
+---------------- As variáveis de Cluster são frutos da integração com arquivos Shape. Os quais são utilizados em programas de econometria espacial e tbm em modelos mais básicos para apresentaçção de dados GeoDa, PowerBI e etc..
+
+CREATE TABLE DataCenso (
+ano INT, 
+UF INT, 
+regiao varchar(45), 
+codmun INT,
+peso_municipio DEC,
+Espacialidades varchar (45), 
+uf_amc varchar (45), 
+final_name varchar (45), 
+clu_final DEC, 
+amc DEC, 
+clu2000_final DEC, 
+Escolaridade DEC,
+pea DEC, 
+peso_amc DEC, 
+pia DEC,
+Ppl_Inf DEC,
+Ppl_Idos DEC, 
+Depend_Inf DEC, 
+Depend_Ido DEC,
+rural DEC,
+urbana DEC, 
+mulheres DEC, 
+homens DEC, 
+Idade_M DEC, 
+Renda_Pct DEC,
+Renda_Por_L DEC, 
+Participação_L DEC, 
+Luz DEC, 
+esgoto DEC, 
+Lixo DEC , 
+agua DEC, 
+EspcVidaaoNascer DEC,
+MortInf DEC, 
+idhm DEC, 
+idhmrend DEC, 
+idhm_long DEC, 
+idhmeduc DEC, 
+txfecund DEC, 
+txenvlhc DEC, 
+Município VARCHAR (45))
+
+
+
+
+
+copy datacenso from 'C:\Program Files\PostgreSQL\15\data\data copy\Teste sql2.csv' delimiter ';' csv header
