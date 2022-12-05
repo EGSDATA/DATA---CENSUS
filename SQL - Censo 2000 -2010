@@ -1,5 +1,5 @@
 ----------------Partindo do Projeto original (Localizado na pasta de código Stata), a idéia é realizar a análise de dados atráves de SQL.
----------------- A base de dados continua sendo privada.
+---------------- A base de dados continua sendo privada. Disponibilizada apenas por solicitação.
 ---------------- Após o código SQL, o objetivo é importar a base de dados para o PowerBi onde será feita a apresentação final dos dados.
 ---------------- As variáveis de Cluster são frutos da integração com arquivos Shape. Os quais são utilizados em programas de econometria espacial e tbm em modelos mais básicos para apresentaçção de dados GeoDa, PowerBI e etc..
 
