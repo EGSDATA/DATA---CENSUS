@@ -46,7 +46,7 @@ txenvlhc DEC,
 Município VARCHAR (45))
 
 
-
-
-
 copy datacenso from 'C:\Program Files\PostgreSQL\15\data\data copy\Teste sql2.csv' delimiter ';' csv header
+
+
+---- Em Construção ---- 
