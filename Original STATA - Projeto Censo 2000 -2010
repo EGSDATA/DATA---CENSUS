@@ -1,4 +1,5 @@
-***Compatibilização Dados DATAZOOM
+***Tendo realizado a Compatibilização Dados através do DATAZOOM. Iniciamos com a limpeza parar cada um dos arquivos das diferentes UF´s.
+*** Os censos são separados por estado devido ao grande volume de informações.
 
 foreach name in AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO {
 *As variáveis disponíveis para cada base do censo (2000 e 2010) arrumados pelo DataZoom: 
